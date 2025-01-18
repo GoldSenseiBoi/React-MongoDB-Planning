@@ -1,9 +1,9 @@
-doctrine_mongodb:
-    connections:
-        default:
-            server: "mongodb://127.0.0.1:27017"
-            options: {}
-    default_database: "planning"
-    document_managers:
-        default:
-            auto_mapping: true
+# doctrine_mongodb:
+#     connections:
+#         default:
+#             server: "mongodb://127.0.0.1:27017"
+#             options: {}
+#     default_database: "planning"
+#     document_managers:
+#         default:
+#             auto_mapping: true
