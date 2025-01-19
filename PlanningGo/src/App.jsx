@@ -49,7 +49,7 @@ const App = () => {
           value={year}
           onChange={(e) => setYear(parseInt(e.target.value))}
         >
-          {[...Array(10).keys()].map((offset) => {
+          {[...Array(6).keys()].map((offset) => {
             const y = new Date().getFullYear() - offset;
             return (
               <option key={y} value={y}>
