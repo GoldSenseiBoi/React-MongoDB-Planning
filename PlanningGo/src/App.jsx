@@ -36,7 +36,7 @@ const App = () => {
 
   return (
     <div className="planning-container">
-      <h1>Planning des corvées dépluchage</h1>
+      <h1>Planning des corvées dépluchage🔪</h1>
 
       <div>
         <label htmlFor="year">Année : </label>
