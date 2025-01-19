@@ -38,17 +38,23 @@ export const updateTasks = async (year, tasks) => {
 
 // Inscription d'un utilisateur
 export const registerUser = async (username, password) => {
-  try {
-    const response = await axios.post(`${API_URL}/users`, {
-      username,
-      password,
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Erreur lors de l'inscription :", error);
-    return null;
-  }
-};
+    try {
+      const response = await axios.post(`${API_URL}/users`, {
+        username,
+        password,
+      });
+  
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+  
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors de l'inscription :", error.message);
+      return { error: error.message };
+    }
+  };
+  
 
 // Connexion d'un utilisateur
 export const loginUser = async (username, password) => {
