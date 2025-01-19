@@ -15,19 +15,26 @@ export const fetchTasks = async (year) => {
   }
 };
 
+axios.defaults.withCredentials = false;
+
 // Mettre à jour les tâches pour une année donnée
 export const updateTasks = async (year, tasks) => {
-  try {
-    const response = await axios.post(`${API_URL}/tasks`, {
-      year,
-      tasks,
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Erreur lors de la mise à jour des tâches :", error);
-    return null;
-  }
-};
+    try {
+      const response = await axios.post(
+        `${API_URL}/tasks`,
+        { year, tasks },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour des tâches :", error);
+      return null;
+    }
+  };
 
 // Inscription d'un utilisateur
 export const registerUser = async (username, password) => {
