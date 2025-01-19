@@ -1,46 +1,72 @@
 <?php
-require_once 'database.php';
 
 class Tasks {
     private $collection;
 
-    public function __construct() {
-        global $database;
-        $this->collection = $database->selectCollection("tasks");
+    public function __construct($database) {
+        $this->collection = $database->selectCollection("task"); // Correspond à la collection dans Compass
     }
 
-    // Récupère les tâches pour une année donnée
+    // Récupérer les tâches pour une année donnée
     public function getTasksByYear($year) {
-        try {
-            $start = new DateTime("$year-01-01");
-            $end = new DateTime("$year-12-31");
+        $task = $this->collection->findOne(['year' => intval($year)]);
 
-            $tasks = $this->collection->find([
-                'week' => [
-                    '$gte' => $start->format('Y-m-d'),
-                    '$lte' => $end->format('Y-m-d')
-                ]
-            ]);
-
-            return iterator_to_array($tasks);
-        } catch (Exception $e) {
-            return ["error" => $e->getMessage()];
+        // Générer un planning vide si aucune tâche n'existe pour cette année
+        if (!$task) {
+            $task = $this->generateEmptyYear($year);
         }
+
+        // Calculer les statistiques
+        $statistics = $this->calculateStatistics($task['weeks']);
+
+        return [
+            'year' => $year,
+            'weeks' => $task['weeks'],
+            'statistics' => $statistics,
+        ];
     }
 
-    // Met à jour une tâche pour une semaine donnée
-    public function updateTask($week, $person) {
-        try {
-            $result = $this->collection->updateOne(
-                ['week' => $week],
-                ['$set' => ['person' => $person]],
-                ['upsert' => true]
-            );
-
-            return $result->getModifiedCount() > 0 ? "Tâche mise à jour" : "Aucune modification";
-        } catch (Exception $e) {
-            return ["error" => $e->getMessage()];
+    // Générer un planning vide pour une année
+    private function generateEmptyYear($year) {
+        $weeks = [];
+        for ($i = 1; $i <= 52; $i++) {
+            $weeks[] = [
+                'week' => $i,
+                'person' => "personne",
+            ];
         }
+
+        // Insérer dans la collection
+        $this->collection->insertOne([
+            'year' => intval($year),
+            'weeks' => $weeks,
+        ]);
+
+        return ['year' => $year, 'weeks' => $weeks];
+    }
+
+    // Calculer les statistiques des participants
+    private function calculateStatistics($weeks) {
+        $stats = [];
+        foreach ($weeks as $week) {
+            $person = $week['person'] ?? "personne";
+            if (!isset($stats[$person])) {
+                $stats[$person] = 0;
+            }
+            $stats[$person]++;
+        }
+        asort($stats); // Trier par ordre croissant
+        return $stats;
+    }
+
+    // Mettre à jour les tâches pour une année
+    public function updateTasks($year, $tasks) {
+        $this->collection->updateOne(
+            ['year' => intval($year)],
+            ['$set' => ['weeks' => $tasks]]
+        );
+
+        return ['message' => "Mise à jour réussie"];
     }
 }
 

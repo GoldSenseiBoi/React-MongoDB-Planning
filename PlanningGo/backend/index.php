@@ -1,51 +1,56 @@
 <?php
-header("Access-Control-Allow-Origin: *"); // Autoriser toutes les origines
-header("Content-Type: application/json"); // Définir le type de contenu
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS"); // Méthodes HTTP autorisées
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With"); // En-têtes autorisées
 
-require 'tasks.php';
-require 'users.php';
+// Configuration des en-têtes pour l'API
+header("Access-Control-Allow-Origin: *");
+header("Content-Type: application/json; charset=UTF-8");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+// Inclusion des fichiers nécessaires
+require_once 'database.php';
+require_once 'tasks.php';
+require_once 'users.php';
 
+// Instanciation des classes nécessaires
+$database = new Database();
+$db = $database->getDatabase();
+$tasks = new Tasks($db);
+$users = new Users($db);
+
+// Récupération de la méthode HTTP et de l'URI
 $method = $_SERVER['REQUEST_METHOD'];
-$request = explode('/', trim($_SERVER['PATH_INFO'] ?? '', '/'));
-$resource = $request[0] ?? '';
+$request = explode('/', trim($_SERVER['PATH_INFO'], '/'));
+
+// Gestion des routes
+$resource = $request[0] ?? null;
+$id = $request[1] ?? null;
 
 if ($resource === 'tasks') {
-    $tasks = new Tasks();
-
     if ($method === 'GET') {
-        // Récupérer les tâches par année
-        $year = $_GET['year'] ?? date('Y'); // Si aucun paramètre, l'année en cours
+        $year = isset($_GET['year']) ? intval($_GET['year']) : date("Y");
         echo json_encode($tasks->getTasksByYear($year));
-    } elseif ($method === 'PUT') {
-        // Mettre à jour une tâche
-        $data = json_decode(file_get_contents("php://input"), true);
-        if (isset($data['week'], $data['person'])) {
-            echo json_encode(['message' => $tasks->updateTask($data['week'], $data['person'])]);
-        } else {
-            http_response_code(400); // Mauvaise requête
-            echo json_encode(['error' => 'Données invalides']);
-        }
+    } elseif ($method === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        echo json_encode($tasks->updateTasks($input['year'], $input['tasks']));
+    } else {
+        http_response_code(405);
+        echo json_encode(["message" => "Méthode non autorisée"]);
     }
 } elseif ($resource === 'users') {
-    $users = new Users();
-    $data = json_decode(file_get_contents("php://input"), true);
-
     if ($method === 'POST') {
-        if ($request[1] === 'register') {
-            echo json_encode(['id' => $users->registerUser($data['username'], $data['password'])]);
-        } elseif ($request[1] === 'login') {
-            echo json_encode($users->loginUser($data['username'], $data['password']));
-        }
+        $input = json_decode(file_get_contents('php://input'), true);
+        echo json_encode($users->registerUser($input['username'], $input['password']));
+    } elseif ($method === 'GET') {
+        $username = $_GET['username'] ?? null;
+        $password = $_GET['password'] ?? null;
+        echo json_encode($users->loginUser($username, $password));
+    } else {
+        http_response_code(405);
+        echo json_encode(["message" => "Méthode non autorisée"]);
     }
 } else {
-    http_response_code(404); // Ressource non trouvée
-    echo json_encode(['message' => 'Ressource non trouvée']);
+    http_response_code(404);
+    echo json_encode(["message" => "Ressource non trouvée"]);
 }
+
 ?>

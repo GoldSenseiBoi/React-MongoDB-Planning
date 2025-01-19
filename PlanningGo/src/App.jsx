@@ -1,101 +1,108 @@
-import { useCallback, useEffect, useState } from 'react';
-import './App.css';
+import { useEffect, useState } from "react";
+import { fetchTasks, updateTasks } from "./api";
 
 const App = () => {
-  const [tasks, setTasks] = useState([]); // Stocker les tâches
-  const [year, setYear] = useState(2025); // Année par défaut
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState([]); // Liste des tâches
+  const [year, setYear] = useState(new Date().getFullYear()); // Année sélectionnée
+  const [statistics, setStatistics] = useState({}); // Statistiques des participants
 
-  // Récupérer les tâches depuis l'API
-  
-  // Stabiliser fetchTasks avec useCallback
-  const fetchTasks = useCallback(async () => {
-    try {
-      const response = await fetch(`http://127.0.0.1:8000/tasks?year=${year}`);
-      const data = await response.json();
-      setTasks(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des tâches :', error);
-      setLoading(false);
-    }
+  // Charger les tâches et statistiques lors du changement d'année
+  useEffect(() => {
+    const loadTasks = async () => {
+      const data = await fetchTasks(year);
+      if (data) {
+        setTasks(data.weeks);
+        setStatistics(data.statistics);
+      }
+    };
+    loadTasks();
   }, [year]);
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  // Gérer la mise à jour des tâches
+  const handleTaskChange = (week, person) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.week === week ? { ...task, person } : task
+      )
+    );
+  };
 
-  // Mettre à jour une tâche
-  const updateTask = async (week, person) => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/tasks', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ week, person }),
-      });
-
-      if (response.ok) {
-        fetchTasks(); // Recharger les tâches après la mise à jour
-      } else {
-        console.error('Erreur lors de la mise à jour');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour :', error);
+  // Enregistrer les modifications dans le backend
+  const handleSave = async () => {
+    const response = await updateTasks(year, tasks);
+    if (response && response.message) {
+      alert("Planning mis à jour avec succès !");
+    } else {
+      alert("Une erreur est survenue lors de la mise à jour.");
     }
   };
 
-  if (loading) {
-    return <div>Chargement...</div>;
-  }
-
   return (
-    <div className="App">
-      <h1>Planning des Corvées</h1>
-      <label htmlFor="year">Année :</label>
-      <select id="year" value={year} onChange={(e) => setYear(e.target.value)}>
-        {Array.from({ length: 6 }, (_, i) => 2020 + i).map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
-      <table>
+    <div>
+      <h1>Planning des corvées dépluchage</h1>
+
+      {/* Sélecteur d'année */}
+      <div>
+        <label htmlFor="year">Année : </label>
+        <select
+          id="year"
+          value={year}
+          onChange={(e) => setYear(parseInt(e.target.value))}
+        >
+          {[...Array(10).keys()].map((offset) => {
+            const y = new Date().getFullYear() - offset;
+            return (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      {/* Tableau des tâches */}
+      <table border="1" style={{ marginTop: "20px", width: "100%" }}>
         <thead>
           <tr>
             <th>Semaine</th>
             <th>Personne</th>
-            <th>Modifier</th>
           </tr>
         </thead>
         <tbody>
-          {tasks.map((task, index) => (
-            <tr key={index}>
+          {tasks.map((task) => (
+            <tr key={task.week}>
               <td>{task.week}</td>
               <td>
                 <select
                   value={task.person}
-                  onChange={(e) => updateTask(task.week, e.target.value)}
+                  onChange={(e) => handleTaskChange(task.week, e.target.value)}
                 >
-                  <option value="david">david</option>
-                  <option value="vincent">vincent</option>
-                  <option value="christophe">christophe</option>
-                  <option value="thomas">thomas</option>
                   <option value="personne">personne</option>
+                  <option value="vincent">vincent</option>
+                  <option value="thomas">thomas</option>
+                  <option value="david">david</option>
+                  <option value="christophe">christophe</option>
                 </select>
-              </td>
-              <td>
-                <button
-                  onClick={() => updateTask(task.week, task.person)}
-                >
-                  Valider
-                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {/* Bouton de validation */}
+      <button onClick={handleSave} style={{ marginTop: "20px" }}>
+        Valider le planning
+      </button>
+
+      {/* Statistiques */}
+      <h2>Statistiques des participants</h2>
+      <ul>
+        {Object.entries(statistics).map(([person, count]) => (
+          <li key={person}>
+            {person} : {count}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
