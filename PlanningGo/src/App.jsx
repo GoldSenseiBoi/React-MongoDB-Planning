@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { fetchTasks, updateTasks } from "./api";
 
 const App = () => {
-  const [tasks, setTasks] = useState([]); // Liste des tâches
-  const [year, setYear] = useState(new Date().getFullYear()); // Année sélectionnée
-  const [statistics, setStatistics] = useState({}); // Statistiques des participants
+  const [tasks, setTasks] = useState([]);
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [statistics, setStatistics] = useState({});
 
-  // Charger les tâches et statistiques lors du changement d'année
   useEffect(() => {
     const loadTasks = async () => {
       const data = await fetchTasks(year);
@@ -18,7 +17,6 @@ const App = () => {
     loadTasks();
   }, [year]);
 
-  // Gérer la mise à jour des tâches
   const handleTaskChange = (week, person) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
@@ -27,7 +25,6 @@ const App = () => {
     );
   };
 
-  // Enregistrer les modifications dans le backend
   const handleSave = async () => {
     const response = await updateTasks(year, tasks);
     if (response && response.message) {
@@ -38,10 +35,9 @@ const App = () => {
   };
 
   return (
-    <div>
+    <div className="planning-container">
       <h1>Planning des corvées dépluchage</h1>
 
-      {/* Sélecteur d'année */}
       <div>
         <label htmlFor="year">Année : </label>
         <select
@@ -60,48 +56,40 @@ const App = () => {
         </select>
       </div>
 
-      {/* Tableau des tâches */}
-      <table border="1" style={{ marginTop: "20px", width: "100%" }}>
-        <thead>
-          <tr>
-            <th>Semaine</th>
-            <th>Personne</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((task) => (
-            <tr key={task.week}>
-              <td>{task.week}</td>
-              <td>
-                <select
-                  value={task.person}
-                  onChange={(e) => handleTaskChange(task.week, e.target.value)}
-                >
-                  <option value="personne">personne</option>
-                  <option value="vincent">vincent</option>
-                  <option value="thomas">thomas</option>
-                  <option value="david">david</option>
-                  <option value="christophe">christophe</option>
-                </select>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Bouton de validation */}
-      <button onClick={handleSave} style={{ marginTop: "20px" }}>
-        Valider le planning
-      </button>
-
-      {/* Statistiques */}
-      <h2>Statistiques des participants</h2>
-      <ul>
-        {Object.entries(statistics).map(([person, count]) => (
-          <li key={person}>
-            {person} : {count}
-          </li>
+      <div className="table-container" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(8, 1fr)',
+        gap: '10px',
+        marginTop: '20px',
+      }}>
+        {tasks.map((task) => (
+          <div key={task.week} className={`week-item ${task.person}`}>
+            <span>{task.week}</span>
+            <select
+              value={task.person}
+              onChange={(e) => handleTaskChange(task.week, e.target.value)}
+            >
+              <option value="personne">personne</option>
+              <option value="vincent">vincent</option>
+              <option value="thomas">thomas</option>
+              <option value="david">david</option>
+              <option value="christophe">christophe</option>
+            </select>
+          </div>
         ))}
+      </div>
+
+      <button onClick={handleSave}>Valider le planning</button>
+
+      <h2>Statistiques par ordre croissant</h2>
+      <ul>
+        {Object.entries(statistics)
+          .sort((a, b) => a[1] - b[1])
+          .map(([person, count]) => (
+            <li key={person}>
+              {person} : {count}
+            </li>
+          ))}
       </ul>
     </div>
   );
